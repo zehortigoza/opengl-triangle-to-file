@@ -28,10 +28,11 @@ const char* vertex_shader_text =
 const char* fragment_shader_text =
 "#version 130\n"
 "out vec4 FragColor;\n"
+"uniform vec4 u_Color;\n"
 "void main()\n"
 "{\n"
-"    // Hardcoded color\n"
-"    FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
+"    // Color now comes from a uniform\n"
+"    FragColor = u_Color;\n"
 "}\n";
 
 // --- Helper Functions ---
@@ -183,17 +184,26 @@ int main(void) {
     glUseProgram(shaderProgram);
 
     GLint verticesLoc = glGetUniformLocation(shaderProgram, "u_Vertices");
+    GLint colorLoc = glGetUniformLocation(shaderProgram, "u_Color");
 
     GLfloat vertices[] = {
          0.0f,  0.5f, 0.0f, 1.0f, // Top |          0x0,        0x3f000000, 0x0, 0x3f800000
         -0.5f, -0.5f, 0.0f, 1.0f, // Bottom Left |  0xbf000000, 0xbf000000, 0x0, 0x3f800000
          0.5f, -0.5f, 0.0f, 1.0f  // Bottom Right | 0x3f000000, 0xbf000000, 0x0, 0x3f800000
     };
+    GLfloat color[] = {1.0f, 0.0f, 0.0f, 1.0f};
 
     if (verticesLoc != -1) {
         glUniform4fv(verticesLoc, 3, vertices);
     } else {
         fprintf(stderr, "Warning: Could not find u_Vertices uniform location.\n");
+    }
+
+    // For the vec4 color, we use glUniform4fv with count=1
+    if (colorLoc != -1) {
+        glUniform4fv(colorLoc, 1, color);
+    } else {
+        fprintf(stderr, "Warning: Could not find u_Color uniform location.\n");
     }
 
     // 10. Render
