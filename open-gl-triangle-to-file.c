@@ -13,16 +13,11 @@
 // Vertex Shader: Using GLSL 1.30 (OpenGL 3.0)
 const char* vertex_shader_text =
 "#version 130\n"
+"uniform vec4 u_Vertices[3];\n"
 "void main()\n"
 "{\n"
-"    // Hardcoded positions for a triangle\n"
-"    const vec4 vertices[3] = vec4[3](\n"
-"        vec4( 0.0,  0.5, 0.0, 1.0),\n" // Top
-"        vec4(-0.5, -0.5, 0.0, 1.0),\n" // Bottom Left
-"        vec4( 0.5, -0.5, 0.0, 1.0)\n"  // Bottom Right
-"    );\n"
-"    \n"
-"    gl_Position = vertices[gl_VertexID];\n"
+"    // Positions now come from a uniform array\n"
+"    gl_Position = u_Vertices[gl_VertexID];\n"
 "}\n";
 
 // Fragment Shader
@@ -182,6 +177,20 @@ int main(void) {
     glDeleteShader(fragmentShader);
 
     glUseProgram(shaderProgram);
+
+    GLint verticesLoc = glGetUniformLocation(shaderProgram, "u_Vertices");
+
+    GLfloat vertices[] = {
+         0.0f,  0.5f, 0.0f, 1.0f, // Top
+        -0.5f, -0.5f, 0.0f, 1.0f, // Bottom Left
+         0.5f, -0.5f, 0.0f, 1.0f  // Bottom Right
+    };
+
+    if (verticesLoc != -1) {
+        glUniform4fv(verticesLoc, 3, vertices);
+    } else {
+        fprintf(stderr, "Warning: Could not find u_Vertices uniform location.\n");
+    }
 
     // 10. Render
     glViewport(0, 0, WIDTH, HEIGHT);
