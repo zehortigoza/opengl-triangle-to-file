@@ -17,7 +17,11 @@ const char* vertex_shader_text =
 "void main()\n"
 "{\n"
 "    // Positions now come from a uniform array\n"
-"    gl_Position = u_Vertices[gl_VertexID];\n"
+"    vec4 pos = u_Vertices[gl_VertexID];\n"
+"    pos.x = pos.x + 0.01;\n"
+"    pos.y = pos.y + 0.02;\n"
+"    pos.z = pos.z + 0.03;\n"
+"    gl_Position = pos;\n"
 "}\n";
 
 // Fragment Shader
