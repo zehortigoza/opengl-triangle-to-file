@@ -185,9 +185,9 @@ int main(void) {
     GLint verticesLoc = glGetUniformLocation(shaderProgram, "u_Vertices");
 
     GLfloat vertices[] = {
-         0.0f,  0.5f, 0.0f, 1.0f, // Top
-        -0.5f, -0.5f, 0.0f, 1.0f, // Bottom Left
-         0.5f, -0.5f, 0.0f, 1.0f  // Bottom Right
+         0.0f,  0.5f, 0.0f, 1.0f, // Top |          0x0,        0x3f000000, 0x0, 0x3f800000
+        -0.5f, -0.5f, 0.0f, 1.0f, // Bottom Left |  0xbf000000, 0xbf000000, 0x0, 0x3f800000
+         0.5f, -0.5f, 0.0f, 1.0f  // Bottom Right | 0x3f000000, 0xbf000000, 0x0, 0x3f800000
     };
 
     if (verticesLoc != -1) {
