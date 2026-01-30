@@ -1,8 +1,11 @@
 #define GL_GLEXT_PROTOTYPES
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 #include <GL/gl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <gbm.h>
 
 // Width and height of the output image
 #define WIDTH 640
@@ -70,63 +73,49 @@ void check_shader_compile(GLuint shader) {
 }
 
 int main(void) {
-    // 1. Initialize EGL
-    EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (display == EGL_NO_DISPLAY) {
-        fprintf(stderr, "Failed to get EGL display\n");
+    int fd = open("/dev/dri/renderD128", O_RDWR);
+    if (fd < 0) {
+        perror("Failed to open /dev/dri/renderD128");
         return -1;
     }
 
-    EGLint major, minor;
-    if (!eglInitialize(display, &major, &minor)) {
-        fprintf(stderr, "Failed to initialize EGL\n");
-        return -1;
-    }
+    struct gbm_device *gbm = gbm_create_device(fd);
 
-    // 2. Choose Configuration
-    // We need PBUFFER support for off-screen rendering
-    EGLint configAttribs[] = {
-        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
-        EGL_BLUE_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
-        EGL_RED_SIZE, 8,
-        EGL_DEPTH_SIZE, 8,
+    PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplay =
+        (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress("eglGetPlatformDisplayEXT");
+
+    EGLDisplay display = eglGetPlatformDisplay(EGL_PLATFORM_GBM_MESA, gbm, NULL);
+    eglInitialize(display, NULL, NULL);
+
+    eglBindAPI(EGL_OPENGL_API);
+
+    // We remove PBUFFER/SURFACE requirements to be as broad as possible
+    EGLint config_attribs[] = {
         EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
         EGL_NONE
     };
 
     EGLConfig config;
-    EGLint numConfigs;
-    if (!eglChooseConfig(display, configAttribs, &config, 1, &numConfigs)) {
-        fprintf(stderr, "Failed to choose EGL config\n");
+    EGLint num_configs;
+    if (!eglChooseConfig(display, config_attribs, &config, 1, &num_configs) || num_configs == 0) {
+        fprintf(stderr, "No suitable EGL config found (Error: 0x%x)\n", eglGetError());
         return -1;
     }
 
-    // 3. Bind OpenGL API (vs OpenGL ES)
-    eglBindAPI(EGL_OPENGL_API);
-
-    // 4. Create EGL Context
+    // CREATE CONTEXT (Passing NULL for Desktop GL usually works best)
     EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, NULL);
     if (context == EGL_NO_CONTEXT) {
-        fprintf(stderr, "Failed to create EGL context\n");
-        return -1;
-    }
-
-    // 5. Create Pbuffer Surface (The "Off-screen Window")
-    // We need a surface to make the context current, even if we render to an FBO.
-    EGLint pbufferAttribs[] = {
-        EGL_WIDTH, WIDTH,
-        EGL_HEIGHT, HEIGHT,
-        EGL_NONE,
-    };
-    EGLSurface surface = eglCreatePbufferSurface(display, config, pbufferAttribs);
-    if (surface == EGL_NO_SURFACE) {
-        fprintf(stderr, "Failed to create EGL surface\n");
+        fprintf(stderr, "Context creation failed! Error: 0x%x\n", eglGetError());
         return -1;
     }
 
     // 6. Make Context Current
-    if (!eglMakeCurrent(display, surface, surface, context)) {
+    if (eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
+        printf("Success! Headless EGL & Desktop OpenGL Ready.\n");
+        printf("GL Vendor:   %s\n", glGetString(GL_VENDOR));
+        printf("GL Renderer: %s\n", glGetString(GL_RENDERER));
+        printf("GL Version:  %s\n", glGetString(GL_VERSION));
+    } else {
         fprintf(stderr, "Failed to make context current\n");
         return -1;
     }
@@ -233,7 +222,6 @@ int main(void) {
     glDeleteTextures(1, &texture);
     free(pixels);
 
-    eglDestroySurface(display, surface);
     eglDestroyContext(display, context);
     eglTerminate(display);
 
