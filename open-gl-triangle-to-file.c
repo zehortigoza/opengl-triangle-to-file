@@ -32,12 +32,7 @@ const char* fragment_shader_text =
 "void main()\n"
 "{\n"
 "    // Color now comes from a uniform\n"
-"    vec4 color;\n"
-"    color.r = u_Color.r + 0.1;\n"
-"    color.g = u_Color.g + 0.1;\n"
-"    color.b = u_Color.b + 0.5;\n"
-"    color.a = 1.0;\n"
-"    FragColor = color;\n"
+"    FragColor = u_Color;\n"
 "}\n";
 
 // --- Helper Functions ---
@@ -196,7 +191,7 @@ int main(void) {
         -0.5f, -0.5f, 0.0f, 1.0f, // Bottom Left |  0xbf000000, 0xbf000000, 0x0, 0x3f800000
          0.5f, -0.5f, 0.0f, 1.0f  // Bottom Right | 0x3f000000, 0xbf000000, 0x0, 0x3f800000
     };
-    GLfloat color[] = {0.0f, 0.9f, 0.0f, 1.0f};
+    GLfloat color[] = {1.0f, 0.0f, 0.0f, 1.0f};
 
     if (verticesLoc != -1) {
         glUniform4fv(verticesLoc, 3, vertices);
@@ -241,8 +236,6 @@ int main(void) {
     eglDestroySurface(display, surface);
     eglDestroyContext(display, context);
     eglTerminate(display);
-
-    printf("end of main\n");
 
     return 0;
 }
